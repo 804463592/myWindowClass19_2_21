@@ -26,6 +26,110 @@ void myPaint(HWND hwnd)
 	EndPaint(hwnd, &ps);//BeginPaint 与 EndPaint，用于从目标窗口获取可画图的 DC，以及关闭这个 DC
 }
 
+/*
+绘制渐变色
+*/
+
+void gradientPaint(HWND hwnd)
+{
+	PAINTSTRUCT ps;
+	HDC hdc;   // DC(可画图的内存对象) 的句柄
+	HPEN hpen; // 画笔
+	int red, blue; // 红、绿两色
+	int y = 1, x = 1; // 行、列
+
+	// 通过窗口句柄获取该窗口的 DC
+	hdc = BeginPaint(hwnd, &ps);
+
+	for (red = 0; red < 256; red++)
+	{
+		for (blue = 0; blue < 256; blue++)
+		{
+			/*
+	        //画笔类型
+				PS_SOLID,       //   直线
+				PS_DASH,        // -------
+				PS_DOT,         // .......
+				PS_DASHDOT,     // _._._._
+				PS_DASHDOTDOT,  // _.._.._
+				PS_NULL         //
+	        */
+	        // 创建画笔
+			hpen = CreatePen(PS_SOLID, 1, RGB(red, 0, blue));
+			// 选中画笔
+			SelectObject(hdc, hpen);
+
+			// 画一条从 (x, y) 到 (x, y+1) 的垂直的线
+			MoveToEx(hdc, x, y, NULL);
+			LineTo(hdc, x++, y + 1);
+
+			// 删除画笔
+			DeleteObject(hpen);
+		}
+		// 一行画完 行+1, 列重新置 1
+		y += 1;
+		x = 1;
+	}
+
+	// 关闭DC 结束绘制
+	EndPaint(hwnd, &ps);
+}
+
+
+/*
+ * 选择字体
+ */
+HFONT ChooseMyFont()
+{
+	CHOOSEFONT cf;
+	LOGFONT lf;
+	HFONT hfont;
+
+	// CHOOSEFONT 结构 
+	cf.lStructSize = sizeof(CHOOSEFONT);
+	cf.hwndOwner = (HWND)NULL;
+	cf.hDC = (HDC)NULL;
+	cf.lpLogFont = &lf;
+	cf.iPointSize = 0;
+	cf.Flags = CF_SCREENFONTS;
+	cf.rgbColors = RGB(0, 0, 0);
+	cf.lCustData = 0L;
+	cf.lpfnHook = (LPCFHOOKPROC)NULL;
+	cf.lpTemplateName = (LPSTR)NULL;
+	cf.hInstance = (HINSTANCE)NULL;
+	cf.lpszStyle = (LPSTR)NULL;
+	cf.nFontType = SCREEN_FONTTYPE;
+	cf.nSizeMin = 0;
+	cf.nSizeMax = 0;
+
+	// 选择字体对话框 
+	ChooseFont(&cf);
+	// 得到HFONT 返回
+	hfont = CreateFontIndirect(cf.lpLogFont);
+	return (hfont);
+}
+
+void fontPaint(HWND hwnd)
+{
+	PAINTSTRUCT ps;
+	HDC hdc;
+	HFONT hFontSetting;
+
+	hdc = BeginPaint(hwnd, &ps);
+
+	// 获得字体对象句柄
+	hFontSetting = ChooseMyFont();
+	// DC 加载字体
+	SelectObject(hdc, hFontSetting);
+
+	// 同样输出文字 Helloworld
+	TextOut(hdc, 0, 0, TEXT("Hello world"), sizeof(TEXT("Hello world")));
+
+	EndPaint(hwnd, &ps);
+}
+
+
+
 
 /*
  * 第四步,窗口过程
@@ -41,10 +145,13 @@ LRESULT CALLBACK MyWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		 * 当程序执行到这个地方的时候，意味着系统向我们的程序发送了 WM_PAINT 消息
 		 * 也就是告诉我们的程序，可以开始绘制窗口的内容了。
 		 */
-		//PS：默认情况下，系统只会向我们的程序发送一次 WM_PAINT 消息。
-		//如果想要再来一次，需要使用 SendMessage 函数，来自己向自己手动发送该消息。
+		 //PS：默认情况下，系统只会向我们的程序发送一次 WM_PAINT 消息。
+		 //如果想要再来一次，需要使用 SendMessage 函数，来自己向自己手动发送该消息。
 
-		myPaint(hwnd); // 调用我们的 GDI 绘制函数
+		 //myPaint(hwnd); // 调用我们的 GDI 绘制函数
+		//gradientPaint(hwnd);
+		fontPaint(hwnd); // 调用我们的 GDI 绘制函数
+
 
 		break;
 		// 窗口关闭消息
